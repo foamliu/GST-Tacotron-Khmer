@@ -1,20 +1,21 @@
+import os
+
 import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # sets device for model and PyTorch tensors
 
-num_train = 120098
-num_dev = 14326
-num_test = 7176
-
-vocab = 'abcdefghijklmnopqrstuvwxyz12345 '
-vocab_size = len(vocab)
-idx_to_char = {i: vocab[i] for i in range(0, len(vocab))}
-char_to_idx = {vocab[i]: i for i in range(0, len(vocab))}
+num_train = 2806
+num_dev = 100
+vocab_size = 70
+vocab_file = 'data/vocab.pkl'
 
 unk_id = 0
 
-thchs30_folder = 'data/data_thchs30'
-data_file = 'data/data_thchs30.pkl'
+DATA_DIR = 'data'
+data_folder = 'data/km_kh_male'
+wav_folder = os.path.join(data_folder, 'wavs')
+tran_file = os.path.join(data_folder, 'line_index.tsv')
+data_file = 'data/km_kh_male.pkl'
 
 ################################
 # Experiment Parameters        #
@@ -30,6 +31,9 @@ distributed_run = False
 # Data Parameters             #
 ################################
 load_mel_from_disk = False
+
+training_files = 'filelists/km_kh_male_audio_text_train_filelist.txt'
+validation_files = 'filelists/km_kh_male_audio_text_valid_filelist.txt'
 
 ################################
 # Audio Parameters             #

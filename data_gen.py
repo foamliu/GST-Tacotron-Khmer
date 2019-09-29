@@ -7,7 +7,7 @@ import torch.utils.data
 
 from config import data_file
 from models import layers
-from utils import load_wav_to_torch, text_to_sequence
+from utils import load_wav_to_torch, load_filepaths_and_text, text_to_sequence
 
 
 class TextMelLoader(torch.utils.data.Dataset):
@@ -17,9 +17,15 @@ class TextMelLoader(torch.utils.data.Dataset):
         3) computes mel-spectrograms from audio files.
     """
 
-    def __init__(self, split, hparams):
+    def __init__(self, audiopaths_and_text, hparams):
         with open(data_file, 'rb') as file:
             data = pickle.load(file)
+
+        self.char2idx = data['char2idx']
+        self.idx2char = data['idx2char']
+
+        self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
+
         self.samples = data[split]
         self.sampling_rate = hparams.sampling_rate
         self.load_mel_from_disk = hparams.load_mel_from_disk
@@ -30,34 +36,36 @@ class TextMelLoader(torch.utils.data.Dataset):
         random.seed(1234)
         random.shuffle(self.samples)
 
-    def get_mel_text_pair(self, sample):
+    def get_mel_text_pair(self, audiopath_and_text):
         # separate filename and text
-        audiopath, text = sample['audiopath'], sample['text']
+        audiopath, text = audiopath_and_text[0], audiopath_and_text[1]
         text = self.get_text(text)
         mel = self.get_mel(audiopath)
         return (text, mel)
 
     def get_mel(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
-        assert (sampling_rate == self.stft.sampling_rate)
+        if sampling_rate != self.stft.sampling_rate:
+            raise ValueError("{} SR doesn't match target {} SR".format(
+                sampling_rate, self.stft.sampling_rate))
+        # audio_norm = audio / self.max_wav_value
         audio_norm = audio.unsqueeze(0)
         audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
         melspec = self.stft.mel_spectrogram(audio_norm)
-        # print('melspec.shape: ' + str(melspec.shape))
         melspec = torch.squeeze(melspec, 0)
 
         return melspec
 
     def get_text(self, text):
-        text = text_to_sequence(text)
+        text = text_to_sequence(text, self.char2idx)
         text_norm = torch.IntTensor(text)
         return text_norm
 
     def __getitem__(self, index):
-        return self.get_mel_text_pair(self.samples[index])
+        return self.get_mel_text_pair(self.audiopaths_and_text[index])
 
     def __len__(self):
-        return len(self.samples)
+        return len(self.audiopaths_and_text)
 
 
 class TextMelCollate:
