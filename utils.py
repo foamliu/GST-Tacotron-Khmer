@@ -5,7 +5,6 @@ import cv2 as cv
 import librosa
 import matplotlib.pylab as plt
 import numpy as np
-import pinyin
 import torch
 
 from config import sampling_rate, ref_wav
@@ -218,9 +217,16 @@ class Denoiser(torch.nn.Module):
 
 def test(model, step_num, loss, get_mel):
     model.eval()
+
+    import pickle
+    from config import vocab_file
+    with open(vocab_file, 'rb') as file:
+        data = pickle.load(file)
+
+    char2idx = data['char2idx']
+
     text = "ប្រទេសចិននិងប្រទេសកម្ពុជាគឺជាប្រទេសជិតខាងដ៏រួសរាយរាក់ទាក់"
-    text = pinyin.get(text, format="numerical", delimiter=" ")
-    sequence = np.array(text_to_sequence(text))[None, :]
+    sequence = np.array(text_to_sequence(text, char2idx))[None, :]
     sequence = torch.autograd.Variable(torch.from_numpy(sequence)).cuda().long()
 
     ref_mel = get_mel(ref_wav)[None, :]
