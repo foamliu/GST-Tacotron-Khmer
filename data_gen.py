@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.utils.data
 
-from config import data_file
+from config import vocab_file
 from models import layers
 from utils import load_wav_to_torch, load_filepaths_and_text, text_to_sequence
 
@@ -18,7 +18,7 @@ class TextMelLoader(torch.utils.data.Dataset):
     """
 
     def __init__(self, audiopaths_and_text, hparams):
-        with open(data_file, 'rb') as file:
+        with open(vocab_file, 'rb') as file:
             data = pickle.load(file)
 
         self.char2idx = data['char2idx']
@@ -26,7 +26,6 @@ class TextMelLoader(torch.utils.data.Dataset):
 
         self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
 
-        self.samples = data[split]
         self.sampling_rate = hparams.sampling_rate
         self.load_mel_from_disk = hparams.load_mel_from_disk
         self.stft = layers.TacotronSTFT(
